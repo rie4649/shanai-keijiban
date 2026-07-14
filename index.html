@@ -35,9 +35,6 @@ header h1{font-size:24px;margin:0;}
 .setBox textarea{width:100%;font-size:18px;padding:12px;border-radius:12px;border:1px solid #aaa;margin-bottom:16px;}
 .setBtn{width:100%;padding:16px;border:none;border-radius:14px;font-size:18px;font-weight:bold;color:white;background:#2e9d45;margin-bottom:10px;}
 .clearBtn{width:100%;padding:16px;border:none;border-radius:14px;font-size:18px;font-weight:bold;color:white;background:#e53935;}
-.lockBox{max-width:400px;margin:60px auto;background:white;border-radius:16px;padding:24px;box-shadow:0 2px 8px rgba(0,0,0,.12);text-align:center;}
-.lockBox input{width:100%;font-size:20px;padding:12px;border-radius:12px;border:1px solid #aaa;margin:14px 0;text-align:center;letter-spacing:4px;}
-.unlockBtn{width:100%;padding:14px;border:none;border-radius:12px;font-size:17px;font-weight:bold;color:white;background:#1565c0;}
 .savedMsg{display:none;background:#e8f8ec;color:#1b7d34;border:2px solid #2e9d45;border-radius:12px;padding:12px;text-align:center;font-size:16px;font-weight:bold;margin-bottom:14px;}
 </style>
 </head>
@@ -66,20 +63,14 @@ header h1{font-size:24px;margin:0;}
 <button onclick="document.getElementById('iosInstallGuide').style.display='none';">✕</button>
 </div>
 
-<!-- 設定画面 -->
+<!-- 設定画面(パスコードなしで誤だけすぐ入力できる) -->
 <div class="settingsScreen" id="settingsScreen">
 <div class="setHeader">
 <button class="closeSet" onclick="closeSettings()">←</button>
 <h2>設定</h2>
 </div>
 
-<div id="lockArea" class="lockBox">
-<div style="font-size:16px;color:#333;font-weight:bold;">パスコードを入力</div>
-<input type="password" id="passInput" placeholder="パスコード" inputmode="numeric">
-<button class="unlockBtn" onclick="checkPass()">確認</button>
-</div>
-
-<div id="editArea" class="setBox" style="display:none;">
+<div class="setBox">
 <div class="savedMsg" id="savedMsg">✅ 保存しました</div>
 <label>今日の掲示内容</label>
 <textarea id="messageInput" rows="6" placeholder="例：本日は14時から安全会議を行います。全員参加してください。"></textarea>
@@ -102,7 +93,6 @@ appId:"1:781856496751:web:e2e1e5de4cd803415a819a"
 if(!firebase.apps.length){firebase.initializeApp(firebaseConfig);}
 const db=firebase.firestore();
 
-const PASSCODE="sekine2026";
 const docRef=db.collection("keijiban").doc("today");
 
 function todayStr(){
@@ -146,20 +136,6 @@ loadBoard();
 
 function openSettings(){
 document.getElementById("settingsScreen").classList.add("show");
-document.getElementById("lockArea").style.display="block";
-document.getElementById("editArea").style.display="none";
-document.getElementById("passInput").value="";
-}
-
-function closeSettings(){
-document.getElementById("settingsScreen").classList.remove("show");
-}
-
-function checkPass(){
-const val=document.getElementById("passInput").value;
-if(val===PASSCODE){
-document.getElementById("lockArea").style.display="none";
-document.getElementById("editArea").style.display="block";
 docRef.get().then(function(snap){
 const data=snap.exists?snap.data():null;
 if(data && data.date===todayStr()){
@@ -168,9 +144,10 @@ document.getElementById("messageInput").value=data.message||"";
 document.getElementById("messageInput").value="";
 }
 });
-}else{
-alert("パスコードが違います");
 }
+
+function closeSettings(){
+document.getElementById("settingsScreen").classList.remove("show");
 }
 
 function saveMessage(){
