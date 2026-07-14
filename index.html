@@ -191,12 +191,7 @@ saveMessage();
 }
 
 function shareLine(){
-const text="📋 社内掲示板
-"+todayDisplay()+"
-
-"+currentText+"
-
-今日もご安全に🤘";
+const text="📋 社内掲示板\n"+todayDisplay()+"\n\n"+currentText+"\n\n今日もご安全に🤘";
 const url="https://line.me/R/msg/text/?"+encodeURIComponent(text);
 window.open(url,"_blank");
 }
