@@ -18,6 +18,11 @@ header h1{font-size:24px;margin:0;}
 .dateBar{text-align:center;font-size:32px;font-weight:bold;color:#123a5e;margin-bottom:6px;}
 .eraBar{text-align:center;font-size:20px;color:#555;font-weight:bold;margin-bottom:6px;}
 .rokuyouBar{text-align:center;font-size:22px;color:#a1785a;font-weight:bold;margin-bottom:16px;}
+.weatherCard{background:white;border-radius:16px;box-shadow:0 3px 10px rgba(0,0,0,.1);padding:14px 18px;margin-bottom:12px;text-align:center;font-size:19px;color:#333;font-weight:bold;}
+.heatWarning{background:#ffe3e3;border:2px solid #e53935;color:#c02020;border-radius:14px;padding:14px 18px;margin-bottom:16px;text-align:center;font-size:19px;font-weight:bold;}
+.triviaCard{background:white;border-radius:16px;box-shadow:0 3px 10px rgba(0,0,0,.1);padding:16px 20px;margin-bottom:16px;}
+.triviaTitle{font-size:16px;font-weight:bold;color:#123a5e;margin-bottom:8px;}
+.triviaItem{font-size:16px;color:#444;padding:4px 0;}
 .quickTemplates{display:flex;flex-direction:column;gap:12px;margin-bottom:18px;}
 .quickTemplates button{background:white;border:none;color:#222;border-radius:20px;padding:22px 20px;font-size:34px;font-weight:bold;width:100%;line-height:1.4;box-shadow:0 4px 14px rgba(0,0,0,.15);}
 .card{position:relative;background:white;border-radius:20px;box-shadow:0 4px 14px rgba(0,0,0,.15);padding:36px 22px;text-align:center;min-height:200px;}
@@ -76,6 +81,12 @@ body{background:white;padding-bottom:0;}
 <div class="dateBar" id="dateBar"></div>
 <div class="eraBar" id="eraBar"></div>
 <div class="rokuyouBar" id="rokuyouBar"></div>
+<div class="weatherCard" id="weatherCard" style="display:none;"></div>
+<div class="heatWarning" id="heatWarning" style="display:none;"></div>
+<div class="triviaCard" id="triviaCard" style="display:none;">
+<div class="triviaTitle">📖 今日は何の日</div>
+<div id="triviaList"></div>
+</div>
 <div class="quickTemplates" id="quickTemplates"></div>
 <div class="card">
 <div class="boardText" id="boardText">読み込み中…</div>
@@ -240,6 +251,82 @@ if(fallback)document.getElementById("rokuyouBar").textContent=fallback;
 const fallback=computeRokuyoFallback(d);
 if(fallback)document.getElementById("rokuyouBar").textContent=fallback;
 });
+}
+
+function cleanWikiText(line){
+let s=line.replace(/^\*+\s*/,"");
+s=s.replace(/\[\[([^\]|]*)\|([^\]]*)\]\]/g,"$2");
+s=s.replace(/\[\[([^\]]*)\]\]/g,"$1");
+s=s.replace(/'''?/g,"");
+s=s.replace(/<ref[^>]*>[\s\S]*?<\/ref>/g,"");
+s=s.replace(/<ref[^>]*\/>/g,"");
+s=s.replace(/\{\{[^}]*\}\}/g,"");
+return s.trim();
+}
+
+function loadTodayTrivia(){
+const d=new Date();
+const title=(d.getMonth()+1)+"月"+d.getDate()+"日";
+const url="https://ja.wikipedia.org/w/api.php?format=json&action=query&prop=revisions&rvprop=content&titles="+encodeURIComponent(title)+"&origin=*";
+fetch(url).then(function(res){return res.json();}).then(function(data){
+const pages=data.query.pages;
+const pageId=Object.keys(pages)[0];
+const content=pages[pageId].revisions[0]["*"];
+const match=content.match(/==\s*記念日・年中行事\s*==([\s\S]*?)==/);
+if(!match)return;
+const lines=match[1].split("\n").filter(function(l){return l.trim().startsWith("*");});
+const cleaned=lines.map(cleanWikiText).filter(function(l){return l.length>0 && l.length<60;});
+if(cleaned.length===0)return;
+const picked=[];
+const pool=cleaned.slice();
+while(picked.length<3 && pool.length>0){
+const idx=Math.floor(Math.random()*pool.length);
+picked.push(pool.splice(idx,1)[0]);
+}
+document.getElementById("triviaList").innerHTML=picked.map(function(t){
+return "<div class='triviaItem'>・"+escapeHtml(t)+"</div>";
+}).join("");
+document.getElementById("triviaCard").style.display="block";
+}).catch(function(){});
+}
+
+function weatherEmoji(code){
+if(code===0)return "☀️";
+if(code===1||code===2)return "🌤️";
+if(code===3)return "☁️";
+if(code===45||code===48)return "🌫️";
+if(code>=51&&code<=57)return "🌦️";
+if(code>=61&&code<=67)return "🌧️";
+if(code>=71&&code<=77)return "❄️";
+if(code>=80&&code<=82)return "🌦️";
+if(code>=95)return "⛈️";
+return "🌡️";
+}
+
+function loadWeather(){
+const url="https://api.open-meteo.com/v1/forecast?latitude=36.4022&longitude=138.2489&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,weathercode&timezone=Asia%2FTokyo&forecast_days=1";
+fetch(url).then(function(res){return res.json();}).then(function(data){
+if(!data || !data.daily)return;
+const maxT=Math.round(data.daily.temperature_2m_max[0]);
+const minT=Math.round(data.daily.temperature_2m_min[0]);
+const pop=data.daily.precipitation_probability_max[0];
+const code=data.daily.weathercode[0];
+const emoji=weatherEmoji(code);
+document.getElementById("weatherCard").innerHTML=
+emoji+" 上田市の天気　最高"+maxT+"℃ / 最低"+minT+"℃　降水確率"+pop+"%";
+document.getElementById("weatherCard").style.display="block";
+
+const heatEl=document.getElementById("heatWarning");
+if(maxT>=35){
+heatEl.textContent="🥵 熱中症警戒！こまめな水分補給と休憩をとってください";
+heatEl.style.display="block";
+}else if(maxT>=31){
+heatEl.textContent="⚠️ 熱中症に注意してください。水分補給を忘れずに";
+heatEl.style.display="block";
+}else{
+heatEl.style.display="none";
+}
+}).catch(function(){});
 }
 
 function renderBoard(data){
@@ -603,6 +690,8 @@ document.addEventListener("DOMContentLoaded",function(){
 document.getElementById("dateBar").textContent=todayDisplay();
 document.getElementById("eraBar").textContent=eraDisplay();
 loadRokuyou();
+loadWeather();
+loadTodayTrivia();
 loadBoard();
 loadTemplates();
 loadSchedule();
