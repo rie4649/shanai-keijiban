@@ -15,7 +15,8 @@ header{background:#123a5e;color:white;padding:18px 10px;text-align:center;positi
 header h1{font-size:24px;margin:0;}
 .gear{position:absolute;top:14px;right:14px;background:none;border:none;color:white;font-size:26px;cursor:pointer;}
 .wrap{max-width:640px;margin:0 auto;padding:18px;}
-.dateBar{text-align:center;font-size:32px;font-weight:bold;color:#123a5e;margin-bottom:16px;}
+.dateBar{text-align:center;font-size:32px;font-weight:bold;color:#123a5e;margin-bottom:4px;}
+.eraBar{text-align:center;font-size:14px;color:#666;margin-bottom:16px;}
 .quickTemplates{display:flex;flex-direction:column;gap:12px;margin-bottom:18px;}
 .quickTemplates button{background:white;border:none;color:#222;border-radius:20px;padding:22px 20px;font-size:34px;font-weight:bold;width:100%;line-height:1.4;box-shadow:0 4px 14px rgba(0,0,0,.15);}
 .card{position:relative;background:white;border-radius:20px;box-shadow:0 4px 14px rgba(0,0,0,.15);padding:36px 22px;text-align:center;min-height:200px;}
@@ -29,6 +30,7 @@ header h1{font-size:24px;margin:0;}
 .scheduleItem:last-child{border-bottom:none;}
 .scheduleDate{font-size:18px;font-weight:bold;color:#123a5e;white-space:nowrap;}
 .scheduleText{font-size:18px;color:#222;flex:1;}
+.birthdayBanner{text-align:center;font-size:15px;color:#a1785a;margin-top:18px;padding:10px;}
 .actionBtn{padding:20px;border:none;border-radius:16px;font-size:19px;font-weight:bold;color:white;}
 .install{background:#ff9800;grid-column:1/3;}
 .printBtn{background:#555;}
@@ -71,6 +73,7 @@ body{background:white;padding-bottom:0;}
 
 <div class="wrap">
 <div class="dateBar" id="dateBar"></div>
+<div class="eraBar" id="eraBar"></div>
 <div class="quickTemplates" id="quickTemplates"></div>
 <div class="card">
 <div class="boardText" id="boardText">読み込み中…</div>
@@ -87,6 +90,8 @@ body{background:white;padding-bottom:0;}
 <button class="actionBtn printBtn" onclick="window.print()">🖨 印刷</button>
 <button class="actionBtn lineBtn" onclick="shareLine()">📱 ライン</button>
 </div>
+
+<div class="birthdayBanner" id="birthdayBanner" style="display:none;"></div>
 
 <div class="iosGuide" id="iosInstallGuide">
 📲 <b>iPhoneでホーム画面に追加</b><br>
@@ -130,6 +135,19 @@ body{background:white;padding-bottom:0;}
 <div class="templateList" id="scheduleEditList"></div>
 </div>
 
+<div class="templateSection">
+<label>従業員の誕生日</label>
+<div class="templateAddRow">
+<input type="text" id="birthdayNameInput" placeholder="お名前（例：古川）" style="flex:1;">
+</div>
+<div style="display:flex;gap:8px;margin-bottom:12px;">
+<input type="number" id="birthdayMonthInput" placeholder="月（例：8）" style="flex:1;font-size:15px;padding:10px;border-radius:10px;border:1px solid #aaa;">
+<input type="number" id="birthdayDayInput" placeholder="日（例：15）" style="flex:1;font-size:15px;padding:10px;border-radius:10px;border:1px solid #aaa;">
+<button class="templateAddBtn" onclick="addBirthday()">追加</button>
+</div>
+<div class="templateList" id="birthdayEditList"></div>
+</div>
+
 <button class="backBtn" onclick="closeSettings()" style="margin-top:16px;">← 戻る</button>
 </div>
 </div>
@@ -151,6 +169,7 @@ const db=firebase.firestore();
 const docRef=db.collection("keijiban").doc("today");
 const templatesRef=db.collection("keijiban").doc("templates");
 const scheduleRef=db.collection("keijiban").doc("schedule");
+const birthdayRef=db.collection("keijiban").doc("birthdays");
 let currentText="特に報告なし";
 
 function todayStr(){
@@ -165,6 +184,14 @@ function todayDisplay(){
 const d=new Date();
 const w=["日","月","火","水","木","金","土"][d.getDay()];
 return d.getFullYear()+"年"+(d.getMonth()+1)+"月"+d.getDate()+"日（"+w+"）";
+}
+
+function eraDisplay(){
+const y=new Date().getFullYear();
+const showa=y-1925;
+const heisei=y-1988;
+const reiwa=y-2018;
+return "昭和"+showa+"年　平成"+heisei+"年　令和"+reiwa+"年";
 }
 
 function renderBoard(data){
@@ -206,6 +233,7 @@ document.getElementById("messageInput").value="";
 });
 loadTemplates();
 loadSchedule();
+loadBirthdays();
 }
 
 function closeSettings(){
@@ -396,6 +424,82 @@ renderScheduleList();
 saveScheduleList();
 }
 
+// ==== 誕生日機能 ====
+let birthdayCache=[];
+
+function loadBirthdays(){
+birthdayRef.get().then(function(snap){
+birthdayCache=(snap.exists && Array.isArray(snap.data().list))?snap.data().list:[];
+renderBirthdayBanner();
+renderBirthdayEditList();
+}).catch(function(){
+birthdayCache=[];
+renderBirthdayBanner();
+renderBirthdayEditList();
+});
+}
+
+function saveBirthdayList(){
+birthdayRef.set({list:birthdayCache}).catch(function(){
+alert("誕生日の保存に失敗しました。通信を確認してください。");
+});
+}
+
+function renderBirthdayBanner(){
+const banner=document.getElementById("birthdayBanner");
+if(!banner)return;
+const d=new Date();
+const month=d.getMonth()+1;
+const day=d.getDate();
+const todays=birthdayCache.filter(function(b){return b.month===month && b.day===day;});
+if(todays.length===0){
+banner.style.display="none";
+return;
+}
+banner.style.display="block";
+banner.textContent="🎉 "+todays.map(function(b){return b.name;}).join("さん、")+"さん、お誕生日おめでとうございます！";
+}
+
+function renderBirthdayEditList(){
+const box=document.getElementById("birthdayEditList");
+if(!box)return;
+if(!birthdayCache || birthdayCache.length===0){
+box.innerHTML="<div style='color:#999;font-size:14px;'>まだ登録されていません</div>";
+return;
+}
+box.innerHTML=birthdayCache.map(function(item,idx){
+return "<div class='templateItem'>"+
+"<div class='tText'>"+escapeHtml(item.name)+"さん（"+item.month+"月"+item.day+"日）</div>"+
+"<button class='tDelete' onclick='deleteBirthday("+idx+")'>🗑</button>"+
+"</div>";
+}).join("");
+}
+
+function addBirthday(){
+const name=document.getElementById("birthdayNameInput").value.trim();
+const month=Number(document.getElementById("birthdayMonthInput").value);
+const day=Number(document.getElementById("birthdayDayInput").value);
+if(!name || !month || !day){
+alert("お名前・月・日を入力してください");
+return;
+}
+birthdayCache.push({name:name,month:month,day:day});
+renderBirthdayBanner();
+renderBirthdayEditList();
+saveBirthdayList();
+document.getElementById("birthdayNameInput").value="";
+document.getElementById("birthdayMonthInput").value="";
+document.getElementById("birthdayDayInput").value="";
+}
+
+function deleteBirthday(index){
+if(!confirm("この登録を削除しますか？"))return;
+birthdayCache.splice(index,1);
+renderBirthdayBanner();
+renderBirthdayEditList();
+saveBirthdayList();
+}
+
 function renderQuickTemplates(list){
 const box=document.getElementById("quickTemplates");
 if(!list || list.length===0){
@@ -449,9 +553,11 @@ document.getElementById("installBtn").style.display="none";
 
 document.addEventListener("DOMContentLoaded",function(){
 document.getElementById("dateBar").textContent=todayDisplay();
+document.getElementById("eraBar").textContent=eraDisplay();
 loadBoard();
 loadTemplates();
 loadSchedule();
+loadBirthdays();
 if(isStandalone()){
 document.getElementById("installBtn").style.display="none";
 }else if(isIos()){
