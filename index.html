@@ -196,19 +196,50 @@ const reiwa=y-2018;
 return "昭和"+showa+"年　平成"+heisei+"年　令和"+reiwa+"年";
 }
 
+function computeRokuyoFallback(date){
+try{
+const parts=new Intl.DateTimeFormat("en-US-u-ca-chinese",{month:"numeric",day:"numeric"}).formatToParts(date);
+let month=null,day=null;
+parts.forEach(function(p){
+if(p.type==="month")month=parseInt(p.value);
+if(p.type==="day")day=parseInt(p.value);
+});
+if(!month || !day)return null;
+const list=["先勝","友引","先負","仏滅","大安","赤口"];
+const idx=((month+day-2)%6+6)%6;
+return list[idx];
+}catch(e){
+return null;
+}
+}
+
 function loadRokuyou(){
 const d=new Date();
 const y=d.getFullYear();
 const m=d.getMonth()+1;
 const day=d.getDate();
-const url="https://koyomi.zingsystem.com/api/?mode=d&cnt=1&targetyyyy="+y+"&targetmm="+m+"&targetdd="+day;
-fetch(url).then(function(res){return res.json();}).then(function(data){
+const params=new URLSearchParams();
+params.append("mode","d");
+params.append("cnt","1");
+params.append("targetyyyy",y);
+params.append("targetmm",m);
+params.append("targetdd",day);
+fetch("https://koyomi.zingsystem.com/api/",{
+method:"POST",
+body:params
+}).then(function(res){return res.json();}).then(function(data){
 const key=y+"-"+String(m).padStart(2,"0")+"-"+String(day).padStart(2,"0");
 const info=data && data.datelist ? data.datelist[key] : null;
 if(info && info.rokuyou){
 document.getElementById("rokuyouBar").textContent=info.rokuyou;
+}else{
+const fallback=computeRokuyoFallback(d);
+if(fallback)document.getElementById("rokuyouBar").textContent=fallback;
 }
-}).catch(function(){});
+}).catch(function(){
+const fallback=computeRokuyoFallback(d);
+if(fallback)document.getElementById("rokuyouBar").textContent=fallback;
+});
 }
 
 function renderBoard(data){
