@@ -261,10 +261,27 @@ s=s.replace(/'''?/g,"");
 s=s.replace(/<ref[^>]*>[\s\S]*?<\/ref>/g,"");
 s=s.replace(/<ref[^>]*\/>/g,"");
 s=s.replace(/\{\{[^}]*\}\}/g,"");
-s=s.replace(/（\s*）/g,"");
-s=s.replace(/\(\s*\)/g,"");
-s=s.replace(/\s+/g," ");
-return s.trim();
+s=s.trim();
+// コロン以降の説明文は不要なので削除
+const colonIdx=s.search(/[：:]/);
+if(colonIdx!==-1){
+s=s.slice(0,colonIdx).trim();
+}
+// カッコ以降の補足も削除（例：海の日（2007年・2012年…）※7月の第3月曜日）
+const parenIdx=s.search(/[（(]/);
+if(parenIdx!==-1){
+s=s.slice(0,parenIdx).trim();
+}
+s=s.replace(/※.*$/,"").trim();
+return s;
+}
+
+function isSimpleAnniv(s){
+if(!s)return false;
+if(s.length<2 || s.length>20)return false;
+if(/\d/.test(s))return false;
+if(s.indexOf("※")!==-1)return false;
+return true;
 }
 
 function loadTodayTrivia(){
@@ -278,7 +295,7 @@ const content=pages[pageId].revisions[0]["*"];
 const match=content.match(/==\s*記念日・年中行事\s*==([\s\S]*?)==/);
 if(!match)return;
 const lines=match[1].split("\n").filter(function(l){return l.trim().startsWith("*");});
-const cleaned=lines.map(cleanWikiText).filter(function(l){return l.length>0 && l.length<60;});
+const cleaned=lines.map(cleanWikiText).filter(isSimpleAnniv);
 if(cleaned.length===0)return;
 const picked=[];
 const pool=cleaned.slice();
