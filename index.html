@@ -281,6 +281,8 @@ if(!s)return false;
 if(s.length<2 || s.length>20)return false;
 if(/\d/.test(s))return false;
 if(s.indexOf("※")!==-1)return false;
+const movableHolidays=["成人の日","海の日","敬老の日","体育の日","スポーツの日"];
+if(movableHolidays.indexOf(s)!==-1)return false;
 return true;
 }
 
