@@ -4,26 +4,18 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>社内掲示板</title>
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#123a5e">
-<link rel="icon" type="image/png" href="icon-192.png">
-<link rel="apple-touch-icon" href="icon-192.png">
-<style>
-*{box-sizing:border-box;}
-body{margin:0;background:linear-gradient(#e9f2fb,#cfe3f5);min-height:100vh;font-family:Arial,"Hiragino Sans",sans-serif;padding-bottom:30px;}
+<link rel="manifest" href="manifest.json"> <meta name="theme-color" content="#123a5e"> <link rel="icon" type="image/png" href="icon-192.png"> <link rel="apple-touch-icon" href="icon-192.png"> <style> *{box-sizing:border-box;} body{margin:0;background:linear-gradient(#e9f2fb,#cfe3f5);min-height:100vh;font-family:Arial,"Hiragino Sans",sans-serif;padding-bottom:30px;}
 header{background:#123a5e;color:white;padding:18px 10px;text-align:center;position:relative;}
 header h1{font-size:24px;margin:0;}
 .gear{position:absolute;top:14px;right:14px;background:none;border:none;color:white;font-size:26px;cursor:pointer;}
-.wrap{max-width:640px;margin:0 auto;padding:18px;}
-.dateBar{text-align:center;font-size:32px;font-weight:bold;color:#123a5e;margin-bottom:16px;}
-.quickTemplates{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:16px;}
-.quickTemplates button{background:white;border:2px solid #123a5e;color:#123a5e;border-radius:999px;padding:8px 14px;font-size:14px;font-weight:bold;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.wrap{max-width:640px;margin:0 auto;padding:18px;} .dateBar{text-align:center;font-size:32px;font-weight:bold;color:#123a5e;margin-bottom:16px;}
+.quickTemplates{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-bottom:18px;}
+.quickTemplates button{background:#123a5e;border:none;color:white;border-radius:16px;padding:16px 20px;font-size:19px;font-weight:bold;max-width:100%;white-space:normal;line-height:1.4;box-shadow:0 2px 6px rgba(0,0,0,.15);}
 .card{position:relative;background:white;border-radius:20px;box-shadow:0 4px 14px rgba(0,0,0,.15);padding:36px 22px;text-align:center;min-height:200px;}
 .boardText{font-size:34px;line-height:1.7;color:#222;white-space:pre-wrap;font-weight:bold;min-height:110px;display:flex;align-items:center;justify-content:center;}
 .boardText.noReport{color:#777;font-weight:bold;}
 .safety{margin-top:20px;font-size:23px;color:#0d6b3a;font-weight:bold;}
-.btnGrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px;}
-.actionBtn{padding:20px;border:none;border-radius:16px;font-size:19px;font-weight:bold;color:white;}
+.btnGrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px;} .actionBtn{padding:20px;border:none;border-radius:16px;font-size:19px;font-weight:bold;color:white;}
 .install{background:#ff9800;grid-column:1/3;}
 .printBtn{background:#555;}
 .lineBtn{background:#06c755;}
@@ -34,29 +26,20 @@ header h1{font-size:24px;margin:0;}
 .setHeader{background:#123a5e;color:white;padding:18px 10px;text-align:center;position:relative;}
 .setHeader h2{font-size:20px;margin:0;}
 .closeSet{position:absolute;top:14px;left:14px;background:none;border:none;color:white;font-size:26px;cursor:pointer;}
-.setBox{max-width:640px;margin:20px auto;background:white;border-radius:16px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,.12);}
-.setBox label{display:block;font-size:16px;font-weight:bold;margin-bottom:8px;color:#333;}
-.setBox textarea{width:100%;font-size:18px;padding:12px;border-radius:12px;border:1px solid #aaa;margin-bottom:16px;}
-.setBtn{width:100%;padding:16px;border:none;border-radius:14px;font-size:18px;font-weight:bold;color:white;background:#2e9d45;margin-bottom:10px;}
+.setBox{max-width:640px;margin:20px auto;background:white;border-radius:16px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,.12);} .setBox label{display:block;font-size:16px;font-weight:bold;margin-bottom:8px;color:#333;}
+.setBox textarea{width:100%;font-size:18px;padding:12px;border-radius:12px;border:1px solid #aaa;margin-bottom:16px;} .setBtn{width:100%;padding:16px;border:none;border-radius:14px;font-size:18px;font-weight:bold;color:white;background:#2e9d45;margin-bottom:10px;}
 .clearBtn{width:100%;padding:16px;border:none;border-radius:14px;font-size:18px;font-weight:bold;color:white;background:#e53935;margin-bottom:10px;}
 .backBtn{width:100%;padding:16px;border:none;border-radius:14px;font-size:18px;font-weight:bold;color:white;background:#888;}
 .savedMsg{display:none;background:#e8f8ec;color:#1b7d34;border:2px solid #2e9d45;border-radius:12px;padding:12px;text-align:center;font-size:16px;font-weight:bold;margin-bottom:14px;}
 .templateSection{border-top:2px solid #eee;margin-top:20px;padding-top:16px;}
 .templateAddRow{display:flex;gap:8px;margin-bottom:12px;}
-.templateAddRow input{flex:1;font-size:16px;padding:10px;border-radius:10px;border:1px solid #aaa;}
-.templateAddBtn{padding:10px 14px;border:none;border-radius:10px;background:#123a5e;color:white;font-weight:bold;font-size:15px;}
+.templateAddRow input{flex:1;font-size:16px;padding:10px;border-radius:10px;border:1px solid #aaa;} .templateAddBtn{padding:10px 14px;border:none;border-radius:10px;background:#123a5e;color:white;font-weight:bold;font-size:15px;}
 .templateList{display:flex;flex-direction:column;gap:8px;}
-.templateItem{display:flex;align-items:center;gap:8px;background:#f0f4f8;border-radius:10px;padding:8px 10px;}
-.templateItem .tText{flex:1;font-size:15px;color:#333;white-space:pre-wrap;text-align:left;cursor:pointer;}
+.templateItem{display:flex;align-items:center;gap:8px;background:#f0f4f8;border-radius:10px;padding:8px 10px;} .templateItem .tText{flex:1;font-size:15px;color:#333;white-space:pre-wrap;text-align:left;cursor:pointer;}
 .templateItem .tDelete{background:none;border:none;color:#e53935;font-size:18px;cursor:pointer;flex-shrink:0;}
 @media print{
-header,.btnGrid,.gear{display:none !important;}
-body{background:white;padding-bottom:0;}
-.card{box-shadow:none;border:1px solid #333;}
-}
-</style>
-</head>
-<body>
+header,.btnGrid,.gear{display:none !important;} body{background:white;padding-bottom:0;}
+.card{box-shadow:none;border:1px solid #333;} } </style> </head> <body>
 
 <header>
 <h1>📋 社内掲示板</h1>
@@ -64,10 +47,7 @@ body{background:white;padding-bottom:0;}
 </header>
 
 <div class="wrap">
-<div class="dateBar" id="dateBar"></div>
-<div class="quickTemplates" id="quickTemplates"></div>
-<div class="card">
-<div class="boardText" id="boardText">読み込み中…</div>
+<div class="dateBar" id="dateBar"></div> <div class="quickTemplates" id="quickTemplates"></div> <div class="card"> <div class="boardText" id="boardText">読み込み中…</div>
 <div class="safety">今日もご安全に🤘</div>
 </div>
 
@@ -85,9 +65,7 @@ body{background:white;padding-bottom:0;}
 </div>
 
 <!-- 設定画面(パスコードなしで誰でもすぐ入力できる) -->
-<div class="settingsScreen" id="settingsScreen">
-<div class="setHeader">
-<button class="closeSet" onclick="closeSettings()">←</button>
+<div class="settingsScreen" id="settingsScreen"> <div class="setHeader"> <button class="closeSet" onclick="closeSettings()">←</button>
 <h2>設定</h2>
 </div>
 
@@ -104,8 +82,7 @@ body{background:white;padding-bottom:0;}
 <input type="text" id="templateInput" placeholder="よく使う文章を入力">
 <button class="templateAddBtn" onclick="addTemplate()">追加</button>
 </div>
-<div class="templateList" id="templateList"></div>
-</div>
+<div class="templateList" id="templateList"></div> </div>
 
 <button class="backBtn" onclick="closeSettings()" style="margin-top:16px;">← 戻る</button>
 </div>
@@ -145,10 +122,7 @@ return d.getFullYear()+"年"+(d.getMonth()+1)+"月"+d.getDate()+"日（"+w+"）"
 
 function renderBoard(data){
 const textEl=document.getElementById("boardText");
-if(data && data.date===todayStr() && data.message && data.message.trim()!==""){
-currentText=data.message;
-textEl.textContent=currentText;
-textEl.classList.remove("noReport");
+if(data && data.date===todayStr() && data.message && data.message.trim()!==""){ currentText=data.message; textEl.textContent=currentText; textEl.classList.remove("noReport");
 }else{
 currentText="特に報告なし";
 textEl.textContent=currentText;
