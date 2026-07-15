@@ -261,6 +261,9 @@ s=s.replace(/'''?/g,"");
 s=s.replace(/<ref[^>]*>[\s\S]*?<\/ref>/g,"");
 s=s.replace(/<ref[^>]*\/>/g,"");
 s=s.replace(/\{\{[^}]*\}\}/g,"");
+s=s.replace(/（\s*）/g,"");
+s=s.replace(/\(\s*\)/g,"");
+s=s.replace(/\s+/g," ");
 return s.trim();
 }
 
@@ -313,7 +316,7 @@ const pop=data.daily.precipitation_probability_max[0];
 const code=data.daily.weathercode[0];
 const emoji=weatherEmoji(code);
 document.getElementById("weatherCard").innerHTML=
-emoji+" 上田市の天気　最高"+maxT+"℃ / 最低"+minT+"℃　降水確率"+pop+"%";
+emoji+" 今日の上田市の天気　最高"+maxT+"℃ / 最低"+minT+"℃　降水確率"+pop+"%";
 document.getElementById("weatherCard").style.display="block";
 
 const heatEl=document.getElementById("heatWarning");
