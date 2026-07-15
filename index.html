@@ -23,6 +23,12 @@ header h1{font-size:24px;margin:0;}
 .boardText.noReport{color:#777;font-weight:bold;}
 .safety{margin-top:20px;font-size:23px;color:#0d6b3a;font-weight:bold;}
 .btnGrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px;}
+.scheduleCard{background:white;border-radius:20px;box-shadow:0 4px 14px rgba(0,0,0,.15);padding:20px 22px;margin-top:16px;}
+.scheduleTitle{font-size:18px;font-weight:bold;color:#123a5e;margin-bottom:12px;}
+.scheduleItem{display:flex;align-items:baseline;gap:12px;padding:10px 0;border-bottom:1px solid #eee;}
+.scheduleItem:last-child{border-bottom:none;}
+.scheduleDate{font-size:18px;font-weight:bold;color:#123a5e;white-space:nowrap;}
+.scheduleText{font-size:18px;color:#222;flex:1;}
 .actionBtn{padding:20px;border:none;border-radius:16px;font-size:19px;font-weight:bold;color:white;}
 .install{background:#ff9800;grid-column:1/3;}
 .printBtn{background:#555;}
@@ -71,6 +77,11 @@ body{background:white;padding-bottom:0;}
 <div class="safety">今日もご安全に🤘</div>
 </div>
 
+<div class="scheduleCard" id="scheduleCard" style="display:none;">
+<div class="scheduleTitle">📅 予定</div>
+<div id="scheduleList"></div>
+</div>
+
 <div class="btnGrid">
 <button class="actionBtn install" id="installBtn" style="display:none;" onclick="installApp()">📲 アプリを追加する</button>
 <button class="actionBtn printBtn" onclick="window.print()">🖨 印刷</button>
@@ -107,6 +118,18 @@ body{background:white;padding-bottom:0;}
 <div class="templateList" id="templateList"></div>
 </div>
 
+<div class="templateSection">
+<label>予定</label>
+<div style="display:flex;gap:8px;margin-bottom:12px;">
+<input type="date" id="scheduleDateInput" style="flex:1;font-size:15px;padding:10px;border-radius:10px;border:1px solid #aaa;">
+</div>
+<div class="templateAddRow">
+<input type="text" id="scheduleTextInput" placeholder="例：車検予定です">
+<button class="templateAddBtn" onclick="addSchedule()">追加</button>
+</div>
+<div class="templateList" id="scheduleEditList"></div>
+</div>
+
 <button class="backBtn" onclick="closeSettings()" style="margin-top:16px;">← 戻る</button>
 </div>
 </div>
@@ -127,6 +150,7 @@ const db=firebase.firestore();
 
 const docRef=db.collection("keijiban").doc("today");
 const templatesRef=db.collection("keijiban").doc("templates");
+const scheduleRef=db.collection("keijiban").doc("schedule");
 let currentText="特に報告なし";
 
 function todayStr(){
@@ -181,6 +205,7 @@ document.getElementById("messageInput").value="";
 }
 });
 loadTemplates();
+loadSchedule();
 }
 
 function closeSettings(){
@@ -282,6 +307,95 @@ textarea.value=textarea.value+"\n"+text;
 }
 }
 
+// ==== 予定機能 ====
+let scheduleCache=[];
+
+function formatScheduleDate(dateStr){
+const parts=dateStr.split("-");
+if(parts.length!==3)return dateStr;
+const w=["日","月","火","水","木","金","土"];
+const d=new Date(dateStr+"T00:00:00");
+return Number(parts[1])+"月"+Number(parts[2])+"日（"+w[d.getDay()]+"）";
+}
+
+function loadSchedule(){
+scheduleRef.get().then(function(snap){
+scheduleCache=(snap.exists && Array.isArray(snap.data().list))?snap.data().list:[];
+renderScheduleList();
+}).catch(function(){
+scheduleCache=[];
+renderScheduleList();
+});
+}
+
+function saveScheduleList(){
+scheduleRef.set({list:scheduleCache}).catch(function(){
+alert("予定の保存に失敗しました。通信を確認してください。");
+});
+}
+
+function upcomingSchedule(){
+const todayD=todayStr();
+return scheduleCache.filter(function(item){return item.date>=todayD;})
+.sort(function(a,b){return a.date<b.date?-1:1;});
+}
+
+function renderScheduleList(){
+const card=document.getElementById("scheduleCard");
+const box=document.getElementById("scheduleList");
+const upcoming=upcomingSchedule();
+if(upcoming.length===0){
+card.style.display="none";
+}else{
+card.style.display="block";
+box.innerHTML=upcoming.map(function(item){
+return "<div class='scheduleItem'>"+
+"<div class='scheduleDate'>"+escapeHtml(formatScheduleDate(item.date))+"</div>"+
+"<div class='scheduleText'>"+escapeHtml(item.text)+"</div>"+
+"</div>";
+}).join("");
+}
+renderScheduleEditList();
+}
+
+function renderScheduleEditList(){
+const box=document.getElementById("scheduleEditList");
+if(!box)return;
+if(!scheduleCache || scheduleCache.length===0){
+box.innerHTML="<div style='color:#999;font-size:14px;'>まだ予定がありません</div>";
+return;
+}
+const sorted=scheduleCache.slice().sort(function(a,b){return a.date<b.date?-1:1;});
+box.innerHTML=sorted.map(function(item){
+const idx=scheduleCache.indexOf(item);
+return "<div class='templateItem'>"+
+"<div class='tText'>"+escapeHtml(formatScheduleDate(item.date))+"　"+escapeHtml(item.text)+"</div>"+
+"<button class='tDelete' onclick='deleteSchedule("+idx+")'>🗑</button>"+
+"</div>";
+}).join("");
+}
+
+function addSchedule(){
+const date=document.getElementById("scheduleDateInput").value;
+const text=document.getElementById("scheduleTextInput").value.trim();
+if(!date || !text){
+alert("日付と内容を入力してください");
+return;
+}
+scheduleCache.push({date:date,text:text});
+renderScheduleList();
+saveScheduleList();
+document.getElementById("scheduleDateInput").value="";
+document.getElementById("scheduleTextInput").value="";
+}
+
+function deleteSchedule(index){
+if(!confirm("この予定を削除しますか？"))return;
+scheduleCache.splice(index,1);
+renderScheduleList();
+saveScheduleList();
+}
+
 function renderQuickTemplates(list){
 const box=document.getElementById("quickTemplates");
 if(!list || list.length===0){
@@ -337,6 +451,7 @@ document.addEventListener("DOMContentLoaded",function(){
 document.getElementById("dateBar").textContent=todayDisplay();
 loadBoard();
 loadTemplates();
+loadSchedule();
 if(isStandalone()){
 document.getElementById("installBtn").style.display="none";
 }else if(isIos()){
