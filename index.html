@@ -15,8 +15,9 @@ header{background:#123a5e;color:white;padding:18px 10px;text-align:center;positi
 header h1{font-size:24px;margin:0;}
 .gear{position:absolute;top:14px;right:14px;background:none;border:none;color:white;font-size:26px;cursor:pointer;}
 .wrap{max-width:640px;margin:0 auto;padding:18px;}
-.dateBar{text-align:center;font-size:32px;font-weight:bold;color:#123a5e;margin-bottom:4px;}
-.eraBar{text-align:center;font-size:14px;color:#666;margin-bottom:16px;}
+.dateBar{text-align:center;font-size:32px;font-weight:bold;color:#123a5e;margin-bottom:6px;}
+.eraBar{text-align:center;font-size:20px;color:#555;font-weight:bold;margin-bottom:6px;}
+.rokuyouBar{text-align:center;font-size:22px;color:#a1785a;font-weight:bold;margin-bottom:16px;}
 .quickTemplates{display:flex;flex-direction:column;gap:12px;margin-bottom:18px;}
 .quickTemplates button{background:white;border:none;color:#222;border-radius:20px;padding:22px 20px;font-size:34px;font-weight:bold;width:100%;line-height:1.4;box-shadow:0 4px 14px rgba(0,0,0,.15);}
 .card{position:relative;background:white;border-radius:20px;box-shadow:0 4px 14px rgba(0,0,0,.15);padding:36px 22px;text-align:center;min-height:200px;}
@@ -74,6 +75,7 @@ body{background:white;padding-bottom:0;}
 <div class="wrap">
 <div class="dateBar" id="dateBar"></div>
 <div class="eraBar" id="eraBar"></div>
+<div class="rokuyouBar" id="rokuyouBar"></div>
 <div class="quickTemplates" id="quickTemplates"></div>
 <div class="card">
 <div class="boardText" id="boardText">読み込み中…</div>
@@ -192,6 +194,21 @@ const showa=y-1925;
 const heisei=y-1988;
 const reiwa=y-2018;
 return "昭和"+showa+"年　平成"+heisei+"年　令和"+reiwa+"年";
+}
+
+function loadRokuyou(){
+const d=new Date();
+const y=d.getFullYear();
+const m=d.getMonth()+1;
+const day=d.getDate();
+const url="https://koyomi.zingsystem.com/api/?mode=d&cnt=1&targetyyyy="+y+"&targetmm="+m+"&targetdd="+day;
+fetch(url).then(function(res){return res.json();}).then(function(data){
+const key=y+"-"+String(m).padStart(2,"0")+"-"+String(day).padStart(2,"0");
+const info=data && data.datelist ? data.datelist[key] : null;
+if(info && info.rokuyou){
+document.getElementById("rokuyouBar").textContent=info.rokuyou;
+}
+}).catch(function(){});
 }
 
 function renderBoard(data){
@@ -554,6 +571,7 @@ document.getElementById("installBtn").style.display="none";
 document.addEventListener("DOMContentLoaded",function(){
 document.getElementById("dateBar").textContent=todayDisplay();
 document.getElementById("eraBar").textContent=eraDisplay();
+loadRokuyou();
 loadBoard();
 loadTemplates();
 loadSchedule();
