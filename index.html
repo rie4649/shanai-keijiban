@@ -16,6 +16,8 @@ header h1{font-size:24px;margin:0;}
 .gear{position:absolute;top:14px;right:14px;background:none;border:none;color:white;font-size:26px;cursor:pointer;}
 .wrap{max-width:640px;margin:0 auto;padding:18px;}
 .dateBar{text-align:center;font-size:32px;font-weight:bold;color:#123a5e;margin-bottom:16px;}
+.quickTemplates{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:16px;}
+.quickTemplates button{background:white;border:2px solid #123a5e;color:#123a5e;border-radius:999px;padding:8px 14px;font-size:14px;font-weight:bold;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .card{position:relative;background:white;border-radius:20px;box-shadow:0 4px 14px rgba(0,0,0,.15);padding:36px 22px;text-align:center;min-height:200px;}
 .boardText{font-size:34px;line-height:1.7;color:#222;white-space:pre-wrap;font-weight:bold;min-height:110px;display:flex;align-items:center;justify-content:center;}
 .boardText.noReport{color:#777;font-weight:bold;}
@@ -63,6 +65,7 @@ body{background:white;padding-bottom:0;}
 
 <div class="wrap">
 <div class="dateBar" id="dateBar"></div>
+<div class="quickTemplates" id="quickTemplates"></div>
 <div class="card">
 <div class="boardText" id="boardText">読み込み中…</div>
 <div class="safety">今日もご安全に🤘</div>
@@ -236,9 +239,17 @@ function loadTemplates(){
 templatesRef.get().then(function(snap){
 templateCache=(snap.exists && Array.isArray(snap.data().list))?snap.data().list:[];
 renderTemplateList(templateCache);
+renderQuickTemplates(templateCache);
 }).catch(function(){
 templateCache=[];
 renderTemplateList(templateCache);
+renderQuickTemplates(templateCache);
+});
+}
+
+function saveTemplateList(){
+templatesRef.set({list:templateCache}).catch(function(){
+alert("定型文の保存に失敗しました。通信を確認してください。");
 });
 }
 
@@ -247,22 +258,18 @@ const input=document.getElementById("templateInput");
 const text=input.value.trim();
 if(!text)return;
 templateCache.push(text);
-templatesRef.set({list:templateCache}).then(function(){
-input.value="";
 renderTemplateList(templateCache);
-}).catch(function(){
-alert("定型文の保存に失敗しました。");
-});
+renderQuickTemplates(templateCache);
+input.value="";
+saveTemplateList();
 }
 
 function deleteTemplate(index){
 if(!confirm("この定型文を削除しますか？"))return;
 templateCache.splice(index,1);
-templatesRef.set({list:templateCache}).then(function(){
 renderTemplateList(templateCache);
-}).catch(function(){
-alert("削除に失敗しました。");
-});
+renderQuickTemplates(templateCache);
+saveTemplateList();
 }
 
 function useTemplate(index){
@@ -273,6 +280,29 @@ textarea.value=text;
 }else{
 textarea.value=textarea.value+"\n"+text;
 }
+}
+
+function renderQuickTemplates(list){
+const box=document.getElementById("quickTemplates");
+if(!list || list.length===0){
+box.innerHTML="";
+return;
+}
+box.innerHTML=list.map(function(t,i){
+return "<button onclick='quickPost("+i+")'>"+escapeHtml(t)+"</button>";
+}).join("");
+}
+
+function quickPost(index){
+const text=templateCache[index];
+if(!confirm("この内容を今日の掲示として反映します。よろしいですか？\n\n"+text))return;
+docRef.set({
+message:text,
+date:todayStr(),
+updatedAt:firebase.firestore.FieldValue.serverTimestamp()
+}).catch(function(){
+alert("反映に失敗しました。通信を確認してください。");
+});
 }
 
 function isIos(){
@@ -306,6 +336,7 @@ document.getElementById("installBtn").style.display="none";
 document.addEventListener("DOMContentLoaded",function(){
 document.getElementById("dateBar").textContent=todayDisplay();
 loadBoard();
+loadTemplates();
 if(isStandalone()){
 document.getElementById("installBtn").style.display="none";
 }else if(isIos()){
