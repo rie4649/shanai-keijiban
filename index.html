@@ -615,4 +615,298 @@ return local.concat(isoEventsCache);
 function upcomingSchedule(){
 const todayD=todayStr();
 return mergedSchedule().filter(function(item){return item.date>=todayD;})
-.sort(function(a,b){return
+.sort(function(a,b){return a.date<b.date?-1:1;});
+}
+
+function renderScheduleList(){
+const card=document.getElementById("scheduleCard");
+const box=document.getElementById("scheduleList");
+const upcoming=upcomingSchedule();
+if(upcoming.length===0){
+card.style.display="none";
+}else{
+card.style.display="block";
+box.innerHTML=upcoming.map(function(item){
+const dot=item.mark?"<span style='display:inline-block;width:10px;height:10px;border-radius:50%;background:"+markColor(item.mark)+";margin-right:5px;vertical-align:baseline;'></span>":"";
+return "<div class='scheduleItem'>"+
+"<div class='scheduleDate'>"+escapeHtml(formatScheduleDate(item.date))+"</div>"+
+"<div class='scheduleText'>"+dot+escapeHtml(item.text)+"</div>"+
+"</div>";
+}).join("");
+}
+renderScheduleEditList();
+}
+
+function renderScheduleEditList(){
+const box=document.getElementById("scheduleEditList");
+if(!box)return;
+const merged=mergedSchedule();
+if(merged.length===0){
+box.innerHTML="<div style='color:#999;font-size:14px;'>まだ予定がありません</div>";
+return;
+}
+const sorted=merged.slice().sort(function(a,b){return a.date<b.date?-1:1;});
+box.innerHTML=sorted.map(function(item){
+const dot=item.mark?"<span style='display:inline-block;width:10px;height:10px;border-radius:50%;background:"+markColor(item.mark)+";margin-right:4px;'></span>":"";
+const isoTag=item.iso?"<span style='font-size:10px;color:#4338ca;background:#eef2ff;border-radius:6px;padding:1px 5px;margin-left:4px;'>ISO</span>":"";
+const editBtn=item.iso
+?"<button class='tDelete' style='color:#123a5e;' onclick='startEditSchedule(true,\""+item.id+"\")'>✏️</button>"
+:"<button class='tDelete' style='color:#123a5e;' onclick='startEditSchedule(false,"+item.idx+")'>✏️</button>";
+const delBtn=item.iso
+?"<button class='tDelete' onclick='deleteIsoSchedule(\""+item.id+"\")'>🗑</button>"
+:"<button class='tDelete' onclick='deleteSchedule("+item.idx+")'>🗑</button>";
+return "<div class='templateItem'>"+
+"<div class='tText'>"+dot+escapeHtml(formatScheduleDate(item.date))+"　"+escapeHtml(item.text)+isoTag+"</div>"+
+editBtn+
+delBtn+
+"</div>";
+}).join("");
+}
+
+function deleteIsoSchedule(id){
+if(!confirm("この予定を削除しますか？\n(ISO管理のカレンダーからも消えます)"))return;
+isoEventsRef.doc(id).delete().catch(function(){
+alert("削除に失敗しました。通信を確認してください。");
+});
+}
+
+function addSchedule(){
+const date=document.getElementById("scheduleDateInput").value;
+const text=document.getElementById("scheduleTextInput").value.trim();
+if(!date || !text){
+alert("日付と内容を入力してください");
+return;
+}
+const finishEdit=function(){
+editingSchedule=null;
+document.getElementById("scheduleDateInput").value="";
+document.getElementById("scheduleTextInput").value="";
+updateScheduleFormMode();
+};
+const failMsg=function(){
+alert("保存に失敗しました。通信を確認してください。");
+};
+if(editingSchedule){
+const ed=editingSchedule;
+if(ed.iso){
+if(selectedMark){
+isoEventsRef.doc(ed.id).update({
+date:date,
+mark:selectedMark,
+title:text,
+updatedAt:firebase.firestore.FieldValue.serverTimestamp()
+}).then(finishEdit).catch(failMsg);
+}else{
+isoEventsRef.doc(ed.id).delete().then(function(){
+scheduleCache.push({date:date,text:text});
+saveScheduleList();
+renderScheduleList();
+finishEdit();
+}).catch(failMsg);
+}
+}else{
+if(selectedMark){
+isoEventsRef.add({
+date:date,
+mark:selectedMark,
+title:text,
+notes:"",
+createdAt:firebase.firestore.FieldValue.serverTimestamp(),
+updatedAt:firebase.firestore.FieldValue.serverTimestamp()
+}).then(function(){
+scheduleCache.splice(ed.idx,1);
+saveScheduleList();
+renderScheduleList();
+finishEdit();
+}).catch(failMsg);
+}else{
+scheduleCache[ed.idx]={date:date,text:text};
+saveScheduleList();
+renderScheduleList();
+finishEdit();
+}
+}
+return;
+}
+if(selectedMark){
+isoEventsRef.add({
+date:date,
+mark:selectedMark,
+title:text,
+notes:"",
+createdAt:firebase.firestore.FieldValue.serverTimestamp(),
+updatedAt:firebase.firestore.FieldValue.serverTimestamp()
+}).then(function(){
+document.getElementById("scheduleDateInput").value="";
+document.getElementById("scheduleTextInput").value="";
+}).catch(function(){
+alert("予定の保存に失敗しました。通信を確認してください。");
+});
+}else{
+scheduleCache.push({date:date,text:text});
+renderScheduleList();
+saveScheduleList();
+document.getElementById("scheduleDateInput").value="";
+document.getElementById("scheduleTextInput").value="";
+}
+}
+
+function deleteSchedule(index){
+if(!confirm("この予定を削除しますか？"))return;
+scheduleCache.splice(index,1);
+renderScheduleList();
+saveScheduleList();
+}
+
+// ==== 誕生日機能 ====
+let birthdayCache=[];
+
+function loadBirthdays(){
+birthdayRef.get().then(function(snap){
+birthdayCache=(snap.exists && Array.isArray(snap.data().list))?snap.data().list:[];
+renderBirthdayBanner();
+renderBirthdayEditList();
+}).catch(function(){
+birthdayCache=[];
+renderBirthdayBanner();
+renderBirthdayEditList();
+});
+}
+
+function saveBirthdayList(){
+birthdayRef.set({list:birthdayCache}).catch(function(){
+alert("誕生日の保存に失敗しました。通信を確認してください。");
+});
+}
+
+function renderBirthdayBanner(){
+const banner=document.getElementById("birthdayBanner");
+if(!banner)return;
+const d=new Date();
+const month=d.getMonth()+1;
+const day=d.getDate();
+const todays=birthdayCache.filter(function(b){return b.month===month && b.day===day;});
+if(todays.length===0){
+banner.style.display="none";
+return;
+}
+banner.style.display="block";
+banner.textContent="🎉 "+todays.map(function(b){return b.name;}).join("さん、")+"さん、お誕生日おめでとうございます！";
+}
+
+function renderBirthdayEditList(){
+const box=document.getElementById("birthdayEditList");
+if(!box)return;
+if(!birthdayCache || birthdayCache.length===0){
+box.innerHTML="<div style='color:#999;font-size:14px;'>まだ登録されていません</div>";
+return;
+}
+box.innerHTML=birthdayCache.map(function(item,idx){
+return "<div class='templateItem'>"+
+"<div class='tText'>"+escapeHtml(item.name)+"さん（"+item.month+"月"+item.day+"日）</div>"+
+"<button class='tDelete' onclick='deleteBirthday("+idx+")'>🗑</button>"+
+"</div>";
+}).join("");
+}
+
+function addBirthday(){
+const name=document.getElementById("birthdayNameInput").value.trim();
+const month=Number(document.getElementById("birthdayMonthInput").value);
+const day=Number(document.getElementById("birthdayDayInput").value);
+if(!name || !month || !day){
+alert("お名前・月・日を入力してください");
+return;
+}
+birthdayCache.push({name:name,month:month,day:day});
+renderBirthdayBanner();
+renderBirthdayEditList();
+saveBirthdayList();
+document.getElementById("birthdayNameInput").value="";
+document.getElementById("birthdayMonthInput").value="";
+document.getElementById("birthdayDayInput").value="";
+}
+
+function deleteBirthday(index){
+if(!confirm("この登録を削除しますか？"))return;
+birthdayCache.splice(index,1);
+renderBirthdayBanner();
+renderBirthdayEditList();
+saveBirthdayList();
+}
+
+function renderQuickTemplates(list){
+const box=document.getElementById("quickTemplates");
+if(!list || list.length===0){
+box.innerHTML="";
+return;
+}
+box.innerHTML=list.map(function(t,i){
+return "<button onclick='quickPost("+i+")'>"+escapeHtml(t)+"</button>";
+}).join("");
+}
+
+function quickPost(index){
+const text=templateCache[index];
+if(!confirm("この内容を今日の掲示として反映します。よろしいですか？\n\n"+text))return;
+docRef.set({
+message:text,
+date:todayStr(),
+updatedAt:firebase.firestore.FieldValue.serverTimestamp()
+}).catch(function(){
+alert("反映に失敗しました。通信を確認してください。");
+});
+}
+
+function isIos(){
+return /iphone|ipad|ipod/i.test(window.navigator.userAgent);
+}
+function isStandalone(){
+return window.matchMedia("(display-mode: standalone)").matches||window.navigator.standalone===true;
+}
+
+let deferredPrompt=null;
+window.addEventListener("beforeinstallprompt",function(e){
+e.preventDefault();
+deferredPrompt=e;
+const btn=document.getElementById("installBtn");
+if(btn)btn.style.display="block";
+});
+
+function installApp(){
+if(!deferredPrompt)return;
+deferredPrompt.prompt();
+deferredPrompt.userChoice.then(function(){
+deferredPrompt=null;
+document.getElementById("installBtn").style.display="none";
+});
+}
+
+window.addEventListener("appinstalled",function(){
+document.getElementById("installBtn").style.display="none";
+});
+
+document.addEventListener("DOMContentLoaded",function(){
+document.getElementById("dateBar").textContent=todayDisplay();
+document.getElementById("eraBar").textContent=eraDisplay();
+loadRokuyou();
+loadWeather();
+loadTodayTrivia();
+loadBoard();
+loadTemplates();
+loadSchedule();
+loadBirthdays();
+if(isStandalone()){
+document.getElementById("installBtn").style.display="none";
+}else if(isIos()){
+document.getElementById("iosInstallGuide").style.display="block";
+}
+});
+
+if("serviceWorker" in navigator){
+window.addEventListener("load",function(){
+navigator.serviceWorker.register("service-worker.js").catch(function(){});
+});
+}
+</script>
+</body>
+</html>
