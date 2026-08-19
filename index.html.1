@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>社内掲示板</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#123a5e">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+*{box-sizing:border-box;}
+body{margin:0;background:linear-gradient(#e9f2fb,#cfe3f5);min-height:100vh;font-family:Arial,"Hiragino Sans",sans-serif;padding-bottom:30px;}
+header{background:#123a5e;color:white;padding:18px 10px;text-align:center;position:relative;}
+header h1{font-size:24px;margin:0;}
+.gear{position:absolute;top:14px;right:14px;background:none;border:none;color:white;font-size:26px;cursor:pointer;}
+.wrap{max-width:640px;margin:0 auto;padding:18px;}
+.dateBar{text-align:center;font-size:32px;font-weight:bold;color:#123a5e;margin-bottom:6px;}
+.eraBar{text-align:center;font-size:20px;color:#555;font-weight:bold;margin-bottom:6px;}
+.rokuyouBar{text-align:center;font-size:22px;color:#a1785a;font-weight:bold;margin-bottom:16px;}
+.weatherCard{background:white;border-radius:16px;box-shadow:0 3px 10px rgba(0,0,0,.1);padding:14px 18px;margin-bottom:12px;text-align:center;font-size:19px;color:#333;font-weight:bold;}
+.heatWarning{background:#ffe3e3;border:2px solid #e53935;color:#c02020;border-radius:14px;padding:14px 18px;margin-bottom:16px;text-align:center;font-size:19px;font-weight:bold;}
+.triviaCard{background:white;border-radius:16px;box-shadow:0 3px 10px rgba(0,0,0,.1);padding:16px 20px;margin-bottom:16px;}
+.triviaTitle{font-size:16px;font-weight:bold;color:#123a5e;margin-bottom:8px;}
+.triviaItem{font-size:16px;color:#444;padding:4px 0;}
+.quickTemplates{display:flex;flex-direction:column;gap:12px;margin-bottom:18px;}
+.quickTemplates button{background:white;border:none;color:#222;border-radius:20px;padding:22px 20px;font-size:34px;font-weight:bold;width:100%;line-height:1.4;box-shadow:0 4px 14px rgba(0,0,0,.15);}
+.card{position:relative;background:white;border-radius:20px;box-shadow:0 4px 14px rgba(0,0,0,.15);padding:36px 22px;text-align:center;min-height:200px;}
+.boardText{font-size:34px;line-height:1.7;color:#222;white-space:pre-wrap;font-weight:bold;min-height:110px;display:flex;align-items:center;justify-content:center;}
+.boardText.noReport{color:#777;font-weight:bold;}
+.safety{margin-top:20px;font-size:23px;color:#0d6b3a;font-weight:bold;}
+.btnGrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px;}
+.scheduleCard{background:white;border-radius:20px;box-shadow:0 4px 14px rgba(0,0,0,.15);padding:20px 22px;margin-top:16px;}
+.scheduleTitle{font-size:18px;font-weight:bold;color:#123a5e;margin-bottom:12px;}
+.scheduleItem{display:flex;align-items:baseline;gap:12px;padding:10px 0;border-bottom:1px solid #eee;}
+.scheduleItem:last-child{border-bottom:none;}
+.scheduleDate{font-size:18px;font-weight:bold;color:#123a5e;white-space:nowrap;}
+.scheduleText{font-size:18px;color:#222;flex:1;}
+.birthdayBanner{text-align:center;font-size:15px;color:#a1785a;margin-top:18px;padding:10px;}
+.actionBtn{padding:20px;border:none;border-radius:16px;font-size:19px;font-weight:bold;color:white;}
+.install{background:#ff9800;grid-column:1/3;}
+.printBtn{background:#555;}
+.lineBtn{background:#06c755;}
+.iosGuide{display:none;margin-top:12px;background:#fff8e1;border:2px solid #ff9800;border-radius:12px;padding:14px;font-size:14px;line-height:1.6;color:#333;}
+.iosGuide button{float:right;background:none;border:none;font-size:16px;}
+.settingsScreen{display:none;position:fixed;inset:0;background:#eef3f8;z-index:999;overflow-y:auto;}
+.settingsScreen.show{display:block;}
+.setHeader{background:#123a5e;color:white;padding:18px 10px;text-align:center;position:relative;}
+.setHeader h2{font-size:20px;margin:0;}
+.closeSet{position:absolute;top:14px;left:14px;background:none;border:none;color:white;font-size:26px;cursor:pointer;}
+.setBox{max-width:640px;margin:20px auto;background:white;border-radius:16px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,.12);}
+.setBox label{display:block;font-size:16px;font-weight:bold;margin-bottom:8px;color:#333;}
+.setBox textarea{width:100%;font-size:18px;padding:12px;border-radius:12px;border:1px solid #aaa;margin-bottom:16px;}
+.setBtn{width:100%;padding:16px;border:none;border-radius:14px;font-size:18px;font-weight:bold;color:white;background:#2e9d45;margin-bottom:10px;}
+.clearBtn{width:100%;padding:16px;border:none;border-radius:14px;font-size:18px;font-weight:bold;color:white;background:#e53935;margin-bottom:10px;}
+.backBtn{width:100%;padding:16px;border:none;border-radius:14px;font-size:18px;font-weight:bold;color:white;background:#888;}
+.savedMsg{display:none;background:#e8f8ec;color:#1b7d34;border:2px solid #2e9d45;border-radius:12px;padding:12px;text-align:center;font-size:16px;font-weight:bold;margin-bottom:14px;}
+.templateSection{border-top:2px solid #eee;margin-top:20px;padding-top:16px;}
+.templateAddRow{display:flex;gap:8px;margin-bottom:12px;}
+.templateAddRow input{flex:1;font-size:16px;padding:10px;border-radius:10px;border:1px solid #aaa;}
+.templateAddBtn{padding:10px 14px;border:none;border-radius:10px;background:#123a5e;color:white;font-weight:bold;font-size:15px;}
+.templateList{display:flex;flex-direction:column;gap:8px;}
+.templateItem{display:flex;align-items:center;gap:8px;background:#f0f4f8;border-radius:10px;padding:8px 10px;}
+.templateItem .tText{flex:1;font-size:15px;color:#333;white-space:pre-wrap;text-align:left;cursor:pointer;}
+.templateItem .tDelete{background:none;border:none;color:#e53935;font-size:18px;cursor:pointer;flex-shrink:0;}
+@media print{
+header,.btnGrid,.gear{display:none !important;}
+body{background:white;padding-bottom:0;}
+.card{box-shadow:none;border:1px solid #333;}
+}
+</style>
+</head>
+<body>
+
+<header>
+<h1>📋 社内掲示板</h1>
+<button class="gear" onclick="openSettings()">⚙️</button>
+</header>
+
+<div class="wrap">
+<div class="dateBar" id="dateBar"></div>
+<div class="eraBar" id="eraBar"></div>
+<div class="rokuyouBar" id="rokuyouBar"></div>
+<div class="weatherCard" id="weatherCard" style="display:none;"></div>
+<div class="heatWarning" id="heatWarning" style="display:none;"></div>
+<div class="triviaCard" id="triviaCard" style="display:none;">
+<div class="triviaTitle">📖 今日は何の日</div>
+<div id="triviaList"></div>
+</div>
+<div class="quickTemplates" id="quickTemplates"></div>
+<div class="card">
+<div class="boardText" id="boardText">読み込み中…</div>
+<div class="safety">今日もご安全に🤘</div>
+</div>
+
+<div class="scheduleCard" id="scheduleCard" style="display:none;">
+<div class="scheduleTitle">📅 予定</div>
+<div id="scheduleList"></div>
+</div>
+
+<div class="btnGrid">
+<button class="actionBtn install" id="installBtn" style="display:none;" onclick="installApp()">📲 アプリを追加する</button>
+<button class="actionBtn printBtn" onclick="window.print()">🖨 印刷</button>
+<button class="actionBtn lineBtn" onclick="shareLine()">📱 ライン</button>
+</div>
+
+<div class="birthdayBanner" id="birthdayBanner" style="display:none;"></div>
+
+<div class="iosGuide" id="iosInstallGuide">
+📲 <b>iPhoneでホーム画面に追加</b><br>
+①下の<b>共有ボタン</b>をタップ → ②「ホーム画面に追加」を選ぶ
+<button onclick="document.getElementById('iosInstallGuide').style.display='none';">✕</button>
+</div>
+</div>
+
+<!-- 設定画面(パスコードなしで誰でもすぐ入力できる) -->
+<div class="settingsScreen" id="settingsScreen">
+<div class="setHeader">
+<button class="closeSet" onclick="closeSettings()">←</button>
+<h2>設定</h2>
+</div>
+
+<div class="setBox">
+<div class="savedMsg" id="savedMsg">✅ 保存しました</div>
+<label>今日の掲示内容</label>
+<textarea id="messageInput" rows="6" placeholder="例：本日は14時から安全会議を行います。全員参加してください。"></textarea>
+<button class="setBtn" onclick="saveMessage()">💾 保存して反映</button>
+<button class="clearBtn" onclick="clearMessage()">🗑 内容を消して「報告なし」に戻す</button>
+
+<div class="templateSection">
+<label>定型文</label>
+<div class="templateAddRow">
+<input type="text" id="templateInput" placeholder="よく使う文章を入力">
+<button class="templateAddBtn" onclick="addTemplate()">追加</button>
+</div>
+<div class="templateList" id="templateList"></div>
+</div>
+
+<div class="templateSection">
+<label>予定</label>
+<div style="display:flex;gap:8px;margin-bottom:12px;">
+<input type="date" id="scheduleDateInput" style="flex:1;font-size:15px;padding:10px;border-radius:10px;border:1px solid #aaa;">
+</div>
+<div id="markSelector" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;"></div>
+<div style="font-size:12px;color:#888;margin-bottom:10px;line-height:1.5;">色(マーク)を選ぶと<b>ISO管理のカレンダーにも表示</b>されます。「掲示板のみ」は掲示板だけに表示されます。</div>
+<div class="templateAddRow">
+<input type="text" id="scheduleTextInput" placeholder="例：車検予定です">
+<button class="templateAddBtn" id="scheduleAddBtn" onclick="addSchedule()">追加</button>
+<button class="templateAddBtn" id="scheduleEditCancel" style="display:none;background:#888;" onclick="cancelEditSchedule()">✕</button>
+</div>
+<div class="templateList" id="scheduleEditList"></div>
+</div>
+
+<div class="templateSection">
+<label>従業員の誕生日</label>
+<div class="templateAddRow">
+<input type="text" id="birthdayNameInput" placeholder="お名前（例：古川）" style="flex:1;">
+</div>
+<div style="display:flex;gap:8px;margin-bottom:12px;">
+<input type="number" id="birthdayMonthInput" placeholder="月（例：8）" style="flex:1;font-size:15px;padding:10px;border-radius:10px;border:1px solid #aaa;">
+<input type="number" id="birthdayDayInput" placeholder="日（例：15）" style="flex:1;font-size:15px;padding:10px;border-radius:10px;border:1px solid #aaa;">
+<button class="templateAddBtn" onclick="addBirthday()">追加</button>
+</div>
+<div class="templateList" id="birthdayEditList"></div>
+</div>
+
+<button class="backBtn" onclick="closeSettings()" style="margin-top:16px;">← 戻る</button>
+</div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+const firebaseConfig={
+apiKey:"AIzaSyD99MxOMnGplSQjV7830bS7-gdCBSM9DGY",
+authDomain:"sekine-store.firebaseapp.com",
+projectId:"sekine-store",
+storageBucket:"sekine-store.firebasestorage.app",
+messagingSenderId:"781856496751",
+appId:"1:781856496751:web:e2e1e5de4cd803415a819a"
+};
+if(!firebase.apps.length){firebase.initializeApp(firebaseConfig);}
+const db=firebase.firestore();
+
+const docRef=db.collection("keijiban").doc("today");
+const templatesRef=db.collection("keijiban").doc("templates");
+const scheduleRef=db.collection("keijiban").doc("schedule");
+const birthdayRef=db.collection("keijiban").doc("birthdays");
+const isoEventsRef=db.collection("isoEvents");
+const eventMarksRef=db.collection("eventMarks");
+let currentText="特に報告なし";
+
+function todayStr(){
+const d=new Date();
+const y=d.getFullYear();
+const m=String(d.getMonth()+1).padStart(2,"0");
+const day=String(d.getDate()).padStart(2,"0");
+return y+"-"+m+"-"+day;
+}
+
+function todayDisplay(){
+const d=new Date();
+const w=["日","月","火","水","木","金","土"][d.getDay()];
+return d.getFullYear()+"年"+(d.getMonth()+1)+"月"+d.getDate()+"日（"+w+"）";
+}
+
+function eraDisplay(){
+const y=new Date().getFullYear();
+const showa=y-1925;
+const heisei=y-1988;
+const reiwa=y-2018;
+return "昭和"+showa+"年　平成"+heisei+"年　令和"+reiwa+"年";
+}
+
+function computeRokuyoFallback(date){
+try{
+const parts=new Intl.DateTimeFormat("en-US-u-ca-chinese",{month:"numeric",day:"numeric"}).formatToParts(date);
+let month=null,day=null;
+parts.forEach(function(p){
+if(p.type==="month")month=parseInt(p.value);
+if(p.type==="day")day=parseInt(p.value);
+});
+if(!month || !day)return null;
+const list=["先勝","友引","先負","仏滅","大安","赤口"];
+const idx=((month+day-2)%6+6)%6;
+return list[idx];
+}catch(e){
+return null;
+}
+}
+
+function loadRokuyou(){
+const d=new Date();
+const y=d.getFullYear();
+const m=d.getMonth()+1;
+const day=d.getDate();
+const params=new URLSearchParams();
+params.append("mode","d");
+params.append("cnt","1");
+params.append("targetyyyy",y);
+params.append("targetmm",m);
+params.append("targetdd",day);
+fetch("https://koyomi.zingsystem.com/api/",{
+method:"POST",
+body:params
+}).then(function(res){return res.json();}).then(function(data){
+const key=y+"-"+String(m).padStart(2,"0")+"-"+String(day).padStart(2,"0");
+const info=data && data.datelist ? data.datelist[key] : null;
+if(info && info.rokuyou){
+document.getElementById("rokuyouBar").textContent=info.rokuyou;
+}else{
+const fallback=computeRokuyoFallback(d);
+if(fallback)document.getElementById("rokuyouBar").textContent=fallback;
+}
+}).catch(function(){
+const fallback=computeRokuyoFallback(d);
+if(fallback)document.getElementById("rokuyouBar").textContent=fallback;
+});
+}
+
+function cleanWikiText(line){
+let s=line.replace(/^\*+\s*/,"");
+s=s.replace(/\[\[([^\]|]*)\|([^\]]*)\]\]/g,"$2");
+s=s.replace(/\[\[([^\]]*)\]\]/g,"$1");
+s=s.replace(/'''?/g,"");
+s=s.replace(/<ref[^>]*>[\s\S]*?<\/ref>/g,"");
+s=s.replace(/<ref[^>]*\/>/g,"");
+s=s.replace(/\{\{[^}]*\}\}/g,"");
+s=s.trim();
+// コロン以降の説明文は不要なので削除
+const colonIdx=s.search(/[：:]/);
+if(colonIdx!==-1){
+s=s.slice(0,colonIdx).trim();
+}
+// カッコ以降の補足も削除（例：海の日（2007年・2012年…）※7月の第3月曜日）
+const parenIdx=s.search(/[（(]/);
+if(parenIdx!==-1){
+s=s.slice(0,parenIdx).trim();
+}
+s=s.replace(/※.*$/,"").trim();
+return s;
+}
+
+function isSimpleAnniv(s){
+if(!s)return false;
+if(s.length<2 || s.length>20)return false;
+if(/\d/.test(s))return false;
+if(s.indexOf("※")!==-1)return false;
+const movableHolidays=["成人の日","海の日","敬老の日","体育の日","スポーツの日"];
+if(movableHolidays.indexOf(s)!==-1)return false;
+return true;
+}
+
+function loadTodayTrivia(){
+const d=new Date();
+const title=(d.getMonth()+1)+"月"+d.getDate()+"日";
+const url="https://ja.wikipedia.org/w/api.php?format=json&action=query&prop=revisions&rvprop=content&titles="+encodeURIComponent(title)+"&origin=*";
+fetch(url).then(function(res){return res.json();}).then(function(data){
+const pages=data.query.pages;
+const pageId=Object.keys(pages)[0];
+const content=pages[pageId].revisions[0]["*"];
+const match=content.match(/==\s*記念日・年中行事\s*==([\s\S]*?)==/);
+if(!match)return;
+const lines=match[1].split("\n").filter(function(l){return l.trim().startsWith("*");});
+const cleaned=lines.map(cleanWikiText).filter(isSimpleAnniv);
+if(cleaned.length===0)return;
+const picked=[];
+const pool=cleaned.slice();
+while(picked.length<3 && pool.length>0){
+const idx=Math.floor(Math.random()*pool.length);
+picked.push(pool.splice(idx,1)[0]);
+}
+document.getElementById("triviaList").innerHTML=picked.map(function(t){
+return "<div class='triviaItem'>・"+escapeHtml(t)+"</div>";
+}).join("");
+document.getElementById("triviaCard").style.display="block";
+}).catch(function(){});
+}
+
+function weatherEmoji(code){
+if(code===0)return "☀️";
+if(code===1||code===2)return "🌤️";
+if(code===3)return "☁️";
+if(code===45||code===48)return "🌫️";
+if(code>=51&&code<=57)return "🌦️";
+if(code>=61&&code<=67)return "🌧️";
+if(code>=71&&code<=77)return "❄️";
+if(code>=80&&code<=82)return "🌦️";
+if(code>=95)return "⛈️";
+return "🌡️";
+}
+
+function loadWeather(){
+const url="https://api.open-meteo.com/v1/forecast?latitude=36.4022&longitude=138.2489&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,weathercode&timezone=Asia%2FTokyo&forecast_days=1";
+fetch(url).then(function(res){return res.json();}).then(function(data){
+if(!data || !data.daily)return;
+const maxT=Math.round(data.daily.temperature_2m_max[0]);
+const minT=Math.round(data.daily.temperature_2m_min[0]);
+const pop=data.daily.precipitation_probability_max[0];
+const code=data.daily.weathercode[0];
+const emoji=weatherEmoji(code);
+document.getElementById("weatherCard").innerHTML=
+emoji+" 今日の上田市の天気　最高"+maxT+"℃ / 最低"+minT+"℃　降水確率"+pop+"%";
+document.getElementById("weatherCard").style.display="block";
+
+const heatEl=document.getElementById("heatWarning");
+if(maxT>=35){
+heatEl.textContent="🥵 熱中症警戒！こまめな水分補給と休憩をとってください";
+heatEl.style.display="block";
+}else if(maxT>=31){
+heatEl.textContent="⚠️ 熱中症に注意してください。水分補給を忘れずに";
+heatEl.style.display="block";
+}else{
+heatEl.style.display="none";
+}
+}).catch(function(){});
+}
+
+function renderBoard(data){
+const textEl=document.getElementById("boardText");
+if(data && data.date===todayStr() && data.message && data.message.trim()!==""){
+currentText=data.message;
+textEl.textContent=currentText;
+textEl.classList.remove("noReport");
+}else{
+currentText="特に報告なし";
+textEl.textContent=currentText;
+textEl.classList.add("noReport");
+}
+}
+
+function loadBoard(){
+docRef.get().then(function(snap){
+renderBoard(snap.exists?snap.data():null);
+}).catch(function(){
+document.getElementById("boardText").textContent="読み込みに失敗しました。通信を確認してください。";
+});
+}
+
+docRef.onSnapshot(function(snap){
+renderBoard(snap.exists?snap.data():null);
+},function(){
+loadBoard();
+});
+
+function openSettings(){
+document.getElementById("settingsScreen").classList.add("show");
+docRef.get().then(function(snap){
+const data=snap.exists?snap.data():null;
+if(data && data.date===todayStr()){
+document.getElementById("messageInput").value=data.message||"";
+}else{
+document.getElementById("messageInput").value="";
+}
+});
+loadTemplates();
+loadSchedule();
+loadBirthdays();
+}
+
+function closeSettings(){
+document.getElementById("settingsScreen").classList.remove("show");
+}
+
+function saveMessage(){
+const text=document.getElementById("messageInput").value.trim();
+docRef.set({
+message:text,
+date:todayStr(),
+updatedAt:firebase.firestore.FieldValue.serverTimestamp()
+}).then(function(){
+const msg=document.getElementById("savedMsg");
+msg.style.display="block";
+setTimeout(function(){msg.style.display="none";},2500);
+}).catch(function(){
+alert("保存に失敗しました。通信を確認してください。");
+});
+}
+
+function clearMessage(){
+if(!confirm("内容を消して「報告なし」に戻します。よろしいですか？"))return;
+document.getElementById("messageInput").value="";
+saveMessage();
+}
+
+function shareLine(){
+const text="📋 社内掲示板\n"+todayDisplay()+"\n\n"+currentText+"\n\n今日もご安全に🤘";
+const url="https://line.me/R/msg/text/?"+encodeURIComponent(text);
+window.open(url,"_blank");
+}
+
+// ==== 定型文機能 ====
+function escapeHtml(s){
+return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+function renderTemplateList(list){
+const box=document.getElementById("templateList");
+if(!list || list.length===0){
+box.innerHTML="<div style='color:#999;font-size:14px;'>まだ定型文がありません</div>";
+return;
+}
+box.innerHTML=list.map(function(t,i){
+return "<div class='templateItem'>"+
+"<div class='tText' onclick='useTemplate("+i+")'>"+escapeHtml(t)+"</div>"+
+"<button class='tDelete' onclick='deleteTemplate("+i+")'>🗑</button>"+
+"</div>";
+}).join("");
+}
+
+let templateCache=[];
+
+function loadTemplates(){
+templatesRef.get().then(function(snap){
+templateCache=(snap.exists && Array.isArray(snap.data().list))?snap.data().list:[];
+renderTemplateList(templateCache);
+renderQuickTemplates(templateCache);
+}).catch(function(){
+templateCache=[];
+renderTemplateList(templateCache);
+renderQuickTemplates(templateCache);
+});
+}
+
+function saveTemplateList(){
+templatesRef.set({list:templateCache}).catch(function(){
+alert("定型文の保存に失敗しました。通信を確認してください。");
+});
+}
+
+function addTemplate(){
+const input=document.getElementById("templateInput");
+const text=input.value.trim();
+if(!text)return;
+templateCache.push(text);
+renderTemplateList(templateCache);
+renderQuickTemplates(templateCache);
+input.value="";
+saveTemplateList();
+}
+
+function deleteTemplate(index){
+if(!confirm("この定型文を削除しますか？"))return;
+templateCache.splice(index,1);
+renderTemplateList(templateCache);
+renderQuickTemplates(templateCache);
+saveTemplateList();
+}
+
+function useTemplate(index){
+const text=templateCache[index];
+const textarea=document.getElementById("messageInput");
+if(textarea.value.trim()===""){
+textarea.value=text;
+}else{
+textarea.value=textarea.value+"\n"+text;
+}
+}
+
+// ==== 予定機能(ISO管理カレンダー連動対応) ====
+let scheduleCache=[];
+let isoEventsCache=[];
+let marksCache=[];
+let selectedMark="";
+let editingSchedule=null;
+
+function startEditSchedule(iso,key){
+let item;
+if(iso){
+item=isoEventsCache.find(function(x){return x.id===key;});
+if(!item)return;
+editingSchedule={iso:true,id:key};
+selectedMark=item.mark||"";
+}else{
+item=scheduleCache[key];
+if(!item)return;
+editingSchedule={iso:false,idx:key};
+selectedMark="";
+}
+document.getElementById("scheduleDateInput").value=item.date||"";
+document.getElementById("scheduleTextInput").value=item.text||"";
+renderMarkSelector();
+updateScheduleFormMode();
+}
+
+function cancelEditSchedule(){
+editingSchedule=null;
+document.getElementById("scheduleDateInput").value="";
+document.getElementById("scheduleTextInput").value="";
+selectedMark="";
+renderMarkSelector();
+updateScheduleFormMode();
+}
+
+function updateScheduleFormMode(){
+const btn=document.getElementById("scheduleAddBtn");
+const cancel=document.getElementById("scheduleEditCancel");
+if(!btn || !cancel)return;
+if(editingSchedule){
+btn.textContent="更新";
+cancel.style.display="inline-block";
+}else{
+btn.textContent="追加";
+cancel.style.display="none";
+}
+}
+
+function markColor(name){
+const m=marksCache.find(function(x){return x.name===name;});
+return m?m.color:"#9ca3af";
+}
+
+function renderMarkSelector(){
+const box=document.getElementById("markSelector");
+if(!box)return;
+let html="<button type='button' onclick='selectMark(\"\")' style='padding:7px 12px;border-radius:999px;font-size:13px;border:2px solid "+(selectedMark===""?"#333":"#ccc")+";background:"+(selectedMark===""?"#333":"#f3f4f6")+";color:"+(selectedMark===""?"#fff":"#555")+";font-weight:"+(selectedMark===""?"700":"400")+";'>掲示板のみ</button>";
+html+=marksCache.map(function(m){
+const sel=selectedMark===m.name;
+return "<button type='button' onclick='selectMark(\""+escapeHtml(m.name).replace(/"/g,"&quot;")+"\")' style='display:flex;align-items:center;gap:5px;padding:7px 12px;border-radius:999px;font-size:13px;border:2px solid "+(sel?m.color:"#ccc")+";background:"+(sel?m.color:"#fff")+";color:"+(sel?"#fff":"#555")+";font-weight:"+(sel?"700":"400")+";'>"+
+"<span style='width:10px;height:10px;border-radius:50%;background:"+(sel?"#fff":m.color)+";display:inline-block;'></span>"+
+escapeHtml(m.name)+"</button>";
+}).join("");
+box.innerHTML=html;
+}
+
+function selectMark(name){
+selectedMark=name;
+renderMarkSelector();
+}
+
+eventMarksRef.orderBy("name").onSnapshot(function(snap){
+marksCache=snap.docs.map(function(d){var x=d.data();return {name:x.name||"",color:x.color||"#4338ca"};});
+renderMarkSelector();
+renderScheduleList();
+},function(err){
+console.log("マーク読み込みエラー:",err);
+});
+
+isoEventsRef.where("date", ">=", todayStr()).onSnapshot(function(snap){
+isoEventsCache=snap.docs.map(function(d){var x=d.data();return {id:d.id,date:x.date||"",text:x.title||"",mark:x.mark||"",source:x.source||"",iso:true};});
+renderScheduleList();
+},function(err){
+console.log("ISO予定読み込みエラー:",err);
+});
+
+function formatScheduleDate(dateStr){
+const parts=dateStr.split("-");
+if(parts.length!==3)return dateStr;
+const w=["日","月","火","水","木","金","土"];
+const d=new Date(dateStr+"T00:00:00");
+return Number(parts[1])+"月"+Number(parts[2])+"日（"+w[d.getDay()]+"）";
+}
+
+function loadSchedule(){
+scheduleRef.get().then(function(snap){
+scheduleCache=(snap.exists && Array.isArray(snap.data().list))?snap.data().list:[];
+renderScheduleList();
+}).catch(function(){
+scheduleCache=[];
+renderScheduleList();
+});
+}
+
+function saveScheduleList(){
+scheduleRef.set({list:scheduleCache}).catch(function(){
+alert("予定の保存に失敗しました。通信を確認してください。");
+});
+}
+
+function mergedSchedule(){
+const local=scheduleCache.map(function(item,i){return {date:item.date,text:item.text,mark:"",iso:false,idx:i};});
+const fromKeijiban=isoEventsCache.filter(function(x){return x.source==="keijiban";});
+return local.concat(fromKeijiban);
+}
+
+function upcomingSchedule(){
+const todayD=todayStr();
+return mergedSchedule().filter(function(item){return item.date>=todayD;})
+.sort(function(a,b){return a.date<b.date?-1:1;});
+}
+
+function renderScheduleList(){
+const card=document.getElementById("scheduleCard");
+const box=document.getElementById("scheduleList");
+const upcoming=upcomingSchedule();
+if(upcoming.length===0){
+card.style.display="none";
+}else{
+card.style.display="block";
+box.innerHTML=upcoming.map(function(item){
+const dot=item.mark?"<span style='display:inline-block;width:10px;height:10px;border-radius:50%;background:"+markColor(item.mark)+";margin-right:5px;vertical-align:baseline;'></span>":"";
+return "<div class='scheduleItem'>"+
+"<div class='scheduleDate'>"+escapeHtml(formatScheduleDate(item.date))+"</div>"+
+"<div class='scheduleText'>"+dot+escapeHtml(item.text)+"</div>"+
+"</div>";
+}).join("");
+}
+renderScheduleEditList();
+}
+
+function renderScheduleEditList(){
+const box=document.getElementById("scheduleEditList");
+if(!box)return;
+const merged=mergedSchedule();
+if(merged.length===0){
+box.innerHTML="<div style='color:#999;font-size:14px;'>まだ予定がありません</div>";
+return;
+}
+const sorted=merged.slice().sort(function(a,b){return a.date<b.date?-1:1;});
+box.innerHTML=sorted.map(function(item){
+const dot=item.mark?"<span style='display:inline-block;width:10px;height:10px;border-radius:50%;background:"+markColor(item.mark)+";margin-right:4px;'></span>":"";
+const isoTag=item.iso?"<span style='font-size:10px;color:#4338ca;background:#eef2ff;border-radius:6px;padding:1px 5px;margin-left:4px;'>ISO</span>":"";
+const editBtn=item.iso
+?"<button class='tDelete' style='color:#123a5e;' onclick='startEditSchedule(true,\""+item.id+"\")'>✏️</button>"
+:"<button class='tDelete' style='color:#123a5e;' onclick='startEditSchedule(false,"+item.idx+")'>✏️</button>";
+const delBtn=item.iso
+?"<button class='tDelete' onclick='deleteIsoSchedule(\""+item.id+"\")'>🗑</button>"
+:"<button class='tDelete' onclick='deleteSchedule("+item.idx+")'>🗑</button>";
+return "<div class='templateItem'>"+
+"<div class='tText'>"+dot+escapeHtml(formatScheduleDate(item.date))+"　"+escapeHtml(item.text)+isoTag+"</div>"+
+editBtn+
+delBtn+
+"</div>";
+}).join("");
+}
+
+function deleteIsoSchedule(id){
+if(!confirm("この予定を削除しますか？\n(ISO管理のカレンダーからも消えます)"))return;
+isoEventsRef.doc(id).delete().catch(function(){
+alert("削除に失敗しました。通信を確認してください。");
+});
+}
+
+function addSchedule(){
+const date=document.getElementById("scheduleDateInput").value;
+const text=document.getElementById("scheduleTextInput").value.trim();
+if(!date || !text){
+alert("日付と内容を入力してください");
+return;
+}
+const finishEdit=function(){
+editingSchedule=null;
+document.getElementById("scheduleDateInput").value="";
+document.getElementById("scheduleTextInput").value="";
+updateScheduleFormMode();
+};
+const failMsg=function(){
+alert("保存に失敗しました。通信を確認してください。");
+};
+if(editingSchedule){
+const ed=editingSchedule;
+if(ed.iso){
+if(selectedMark){
+isoEventsRef.doc(ed.id).update({
+date:date,
+mark:selectedMark,
+title:text,
+updatedAt:firebase.firestore.FieldValue.serverTimestamp()
+}).then(finishEdit).catch(failMsg);
+}else{
+isoEventsRef.doc(ed.id).delete().then(function(){
+scheduleCache.push({date:date,text:text});
+saveScheduleList();
+renderScheduleList();
+finishEdit();
+}).catch(failMsg);
+}
+}else{
+if(selectedMark){
+isoEventsRef.add({
+date:date,
+mark:selectedMark,
+title:text,
+notes:"",
+source:"keijiban",
+createdAt:firebase.firestore.FieldValue.serverTimestamp(),
+updatedAt:firebase.firestore.FieldValue.serverTimestamp()
+}).then(function(){
+scheduleCache.splice(ed.idx,1);
+saveScheduleList();
+renderScheduleList();
+finishEdit();
+}).catch(failMsg);
+}else{
+scheduleCache[ed.idx]={date:date,text:text};
+saveScheduleList();
+renderScheduleList();
+finishEdit();
+}
+}
+return;
+}
+if(selectedMark){
+isoEventsRef.add({
+date:date,
+mark:selectedMark,
+title:text,
+notes:"",
+source:"keijiban",
+createdAt:firebase.firestore.FieldValue.serverTimestamp(),
+updatedAt:firebase.firestore.FieldValue.serverTimestamp()
+}).then(function(){
+document.getElementById("scheduleDateInput").value="";
+document.getElementById("scheduleTextInput").value="";
+}).catch(function(){
+alert("予定の保存に失敗しました。通信を確認してください。");
+});
+}else{
+scheduleCache.push({date:date,text:text});
+renderScheduleList();
+saveScheduleList();
+document.getElementById("scheduleDateInput").value="";
+document.getElementById("scheduleTextInput").value="";
+}
+}
+
+function deleteSchedule(index){
+if(!confirm("この予定を削除しますか？"))return;
+scheduleCache.splice(index,1);
+renderScheduleList();
+saveScheduleList();
+}
+
+// ==== 誕生日機能 ====
+let birthdayCache=[];
+
+function loadBirthdays(){
+birthdayRef.get().then(function(snap){
+birthdayCache=(snap.exists && Array.isArray(snap.data().list))?snap.data().list:[];
+renderBirthdayBanner();
+renderBirthdayEditList();
+}).catch(function(){
+birthdayCache=[];
+renderBirthdayBanner();
+renderBirthdayEditList();
+});
+}
+
+function saveBirthdayList(){
+birthdayRef.set({list:birthdayCache}).catch(function(){
+alert("誕生日の保存に失敗しました。通信を確認してください。");
+});
+}
+
+function renderBirthdayBanner(){
+const banner=document.getElementById("birthdayBanner");
+if(!banner)return;
+const d=new Date();
+const month=d.getMonth()+1;
+const day=d.getDate();
+const todays=birthdayCache.filter(function(b){return b.month===month && b.day===day;});
+if(todays.length===0){
+banner.style.display="none";
+return;
+}
+banner.style.display="block";
+banner.textContent="🎉 "+todays.map(function(b){return b.name;}).join("さん、")+"さん、お誕生日おめでとうございます！";
+}
+
+function renderBirthdayEditList(){
+const box=document.getElementById("birthdayEditList");
+if(!box)return;
+if(!birthdayCache || birthdayCache.length===0){
+box.innerHTML="<div style='color:#999;font-size:14px;'>まだ登録されていません</div>";
+return;
+}
+box.innerHTML=birthdayCache.map(function(item,idx){
+return "<div class='templateItem'>"+
+"<div class='tText'>"+escapeHtml(item.name)+"さん（"+item.month+"月"+item.day+"日）</div>"+
+"<button class='tDelete' onclick='deleteBirthday("+idx+")'>🗑</button>"+
+"</div>";
+}).join("");
+}
+
+function addBirthday(){
+const name=document.getElementById("birthdayNameInput").value.trim();
+const month=Number(document.getElementById("birthdayMonthInput").value);
+const day=Number(document.getElementById("birthdayDayInput").value);
+if(!name || !month || !day){
+alert("お名前・月・日を入力してください");
+return;
+}
+birthdayCache.push({name:name,month:month,day:day});
+renderBirthdayBanner();
+renderBirthdayEditList();
+saveBirthdayList();
+document.getElementById("birthdayNameInput").value="";
+document.getElementById("birthdayMonthInput").value="";
+document.getElementById("birthdayDayInput").value="";
+}
+
+function deleteBirthday(index){
+if(!confirm("この登録を削除しますか？"))return;
+birthdayCache.splice(index,1);
+renderBirthdayBanner();
+renderBirthdayEditList();
+saveBirthdayList();
+}
+
+function renderQuickTemplates(list){
+const box=document.getElementById("quickTemplates");
+if(!list || list.length===0){
+box.innerHTML="";
+return;
+}
+box.innerHTML=list.map(function(t,i){
+return "<button onclick='quickPost("+i+")'>"+escapeHtml(t)+"</button>";
+}).join("");
+}
+
+function quickPost(index){
+const text=templateCache[index];
+if(!confirm("この内容を今日の掲示として反映します。よろしいですか？\n\n"+text))return;
+docRef.set({
+message:text,
+date:todayStr(),
+updatedAt:firebase.firestore.FieldValue.serverTimestamp()
+}).catch(function(){
+alert("反映に失敗しました。通信を確認してください。");
+});
+}
+
+function isIos(){
+return /iphone|ipad|ipod/i.test(window.navigator.userAgent);
+}
+function isStandalone(){
+return window.matchMedia("(display-mode: standalone)").matches||window.navigator.standalone===true;
+}
+
+let deferredPrompt=null;
+window.addEventListener("beforeinstallprompt",function(e){
+e.preventDefault();
+deferredPrompt=e;
+const btn=document.getElementById("installBtn");
+if(btn)btn.style.display="block";
+});
+
+function installApp(){
+if(!deferredPrompt)return;
+deferredPrompt.prompt();
+deferredPrompt.userChoice.then(function(){
+deferredPrompt=null;
+document.getElementById("installBtn").style.display="none";
+});
+}
+
+window.addEventListener("appinstalled",function(){
+document.getElementById("installBtn").style.display="none";
+});
+
+document.addEventListener("DOMContentLoaded",function(){
+document.getElementById("dateBar").textContent=todayDisplay();
+document.getElementById("eraBar").textContent=eraDisplay();
+loadRokuyou();
+loadWeather();
+loadTodayTrivia();
+loadBoard();
+loadTemplates();
+loadSchedule();
+loadBirthdays();
+if(isStandalone()){
+document.getElementById("installBtn").style.display="none";
+}else if(isIos()){
+document.getElementById("iosInstallGuide").style.display="block";
+}
+});
+
+if("serviceWorker" in navigator){
+window.addEventListener("load",function(){
+navigator.serviceWorker.register("service-worker.js").catch(function(){});
+});
+}
+</script>
+</body>
+</html>
